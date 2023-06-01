@@ -139,7 +139,7 @@ def logout():
 
 
 # Dashboard
-@app.route('/dashboard')
+@app.route('/dashboard', methods=['GET', 'POST'])
 @is_logged_in
 def dashboard():
     # Create cursor
@@ -149,10 +149,49 @@ def dashboard():
     cur.execute("SELECT * FROM queues WHERE created_by_client_id = %s", (session['id'],))
     queues = cur.fetchall()
     
-    # Close connection
-    cur.close()
+    # Get the selected queue ID from the URL parameter
+    selected_queue_id = request.args.get('queue_id')
+    selected_queue_name = request.args.get('queue_name')
+
+    # Get the attendees table name for the selected queue
+    selected_queue_name = None
+    attendees_table_name = None
+    attendees = []  # Initialize the attendees list
+    if selected_queue_id:
+        cur.execute("SELECT queue_name FROM queues WHERE id = %s", (selected_queue_id,))
+        queue_data = cur.fetchone()
+        if queue_data:
+            selected_queue_name = queue_data['queue_name']
+            attendees_table_name = f"{selected_queue_name.replace(' ', '_')}_attendees"
+
+            # Get the attendees for the selected queue
+            if attendees_table_name:
+                cur.execute(f"SELECT * FROM {attendees_table_name}")
+                attendees = cur.fetchall()
+                
+            # Delete Queue
+            if request.method == 'POST' and selected_queue_id:
+                # Get the selected queue ID from the URL parameter
+                queue_id_to_delete = selected_queue_id
+                
+                # Delete the queue
+                cur.execute("DELETE FROM queues WHERE id = %s", (queue_id_to_delete,))
+
+                # Delete the corresponding attendees table
+                attendees_table_name = f"{selected_queue_name.replace(' ', '_')}_attendees"
+                cur.execute(f"DROP TABLE IF EXISTS {attendees_table_name}")
+
+                # Commit to DB
+                mysql.connection.commit()
+                
+                flash('Queue Deleted Successfully!', 'success')
+                
+                return redirect(url_for('dashboard'))
+
+            # Close connection
+            cur.close()
     
-    return render_template('dashboard.html', queues=queues)
+    return render_template('dashboard.html', queues=queues, attendees=attendees, selected_queue_id=selected_queue_id, selected_queue_name=selected_queue_name)
 
 
 # Add queue
@@ -271,3 +310,9 @@ def queue_status(queue_id):
     cur.close()
     
     return render_template('queue_status.html', queue_name=queue_name, position=position)
+
+
+# Logout
+@app.route('/join_details')
+def join_details():
+    return render_template('join_details.html')  
