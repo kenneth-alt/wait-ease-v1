@@ -1,0 +1,30 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <div class="container text-center">
+    <div class="my-3">
+      <h5>Dear Customer, you are welcome!</h5>
+      <h5>Please join the queue for {{ queue_name }}</h5>
+      <h6 class="mb-2 text-muted">If you are here for {{ purpose }}</h6>
+      <p>Instructions: {{ instructions }}</p>
+    </div>
+
+    <hr />
+
+    <div class="mt-3">
+      <h6>Please join the Queue by visiting the link below:</h6>
+      <p>{{ join_url }}</p>
+    </div>
+
+    <br /> 
+
+    <div class="mt-3">
+      <h6>OR by simply scanning this QR Code:</h6>
+      <img src="{{ url_for('static', filename=qr_code_path) }}" alt="WaitEase Logo" style="max-height: 2500px; max-width: 250px;">
+    </div>
+
+    <div class="text-center mt-3">
+      <button class="btn btn-primary" onclick="window.print()">Print</button>
+    </div>
+  </div>
+{% endblock %}
