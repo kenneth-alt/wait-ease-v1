@@ -2,15 +2,14 @@
 
 {% block body %}
 
-<div class="container">
+<div class="container text-center">
   {% if error %}
     <p>{{ error }}</p>
   {% else %}
-  <h4>Hi, {{ first_name }}!</h4>
-  <h6 class="text-center my-3">Welcome to {{ business_name }}</h6>
-  <h6>You have joined the {{ queue_name }} queue!</h6>
-  <p>Your current position in the queue is: </p>
-    <p>{{ position }}</p>
+  <h4 class="my-3">Hi!</h4>
+  <h6>Thank you for joining the {{ queue_name }} queue!</h6>
+  <p>Your current position on the queue is: </p>
+    <h3>{{ position }}</h3>
   <h6>Please refresh this page periodically to get your updated position!</h6>
   {% endif %}
 </div>
