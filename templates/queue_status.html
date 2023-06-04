@@ -6,11 +6,22 @@
   {% if error %}
     <p>{{ error }}</p>
   {% else %}
-  <h4 class="my-3">Hi!</h4>
-  <h6>Thank you for joining the {{ queue_name }} queue!</h6>
-  <p>Your current position on the queue is: </p>
-    <h3>{{ position }}</h3>
-  <h6>Please refresh this page periodically to get your updated position!</h6>
+    {% if position == 2 %}
+      <h4 class="my-3">Hi!</h4>
+      <h6>Thank you for joining the {{ queue_name }} queue!</h6>
+      <h3>You're next in line!</h3>
+    {% elif position == 1 %}
+      <h4 class="my-3">Hi!</h4>
+      <h6>Thank you for joining the {{ queue_name }} queue!</h6>
+      <h3>It's your turn!</h3>
+    {% elif position == 0 %}
+      <h3 class="my-3">Thank you for banking with us!</h3>
+      <p>Have a great day!</p>
+    {% else %}
+      <p>Your current position on the queue is:</p>
+      <h3>{{ position }}</h3>
+      <h6>Please refresh this page periodically to get your updated position!</h6>
+    {% endif %}
   {% endif %}
 </div>
 
