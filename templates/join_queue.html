@@ -1,0 +1,31 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+
+  <div class="form-container">
+    <h3 class="text-center my-3">Welcome to {{ business_name }}</h3>
+
+    <p>Please fill and Submit this form to join the Line!</p>
+
+    <form method="POST" action="">
+      <div class="form-group">
+        <label for="first_name" class="form-label">First Name</label>
+        <input type="text" class="form-control" name="first_name" required>
+      </div>
+      <div class="form-group">
+        <label for="last_name" class="form-label">Last Name</label>
+        <input type="text" class="form-control" name="last_name" required>
+      </div>
+      <div class="form-group">
+        <label for="account_number" class="form-label">Account Number</label>
+        <input type="text" class="form-control" name="account_number" required>
+      </div>
+      <div class="form-group">
+        <label for="service_requested" class="form-label">Service Requested</label>
+        <input type="text" class="form-control" name="service_requested">
+      </div>
+      <p class="text-center"><button type="submit" class="btn btn-outline-success my-3">Join Queue</button></p>
+    </form>
+  </div>
+
+{% endblock %}
