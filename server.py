@@ -170,9 +170,9 @@ def dashboard():
                 attendees = cur.fetchall()
                 
             # Delete Queue
-            if request.method == 'POST' and selected_queue_id:
-                # Get the selected queue ID from the URL parameter
-                queue_id_to_delete = selected_queue_id
+            if request.method == 'POST' and 'delete_queue_id' in request.form:
+                # Get the selected queue ID from the form data
+                queue_id_to_delete = request.form['delete_queue_id']
                 
                 # Delete the queue
                 cur.execute("DELETE FROM queues WHERE id = %s", (queue_id_to_delete,))
@@ -180,6 +180,11 @@ def dashboard():
                 # Delete the corresponding attendees table
                 attendees_table_name = f"{selected_queue_name.replace(' ', '_')}_attendees"
                 cur.execute(f"DROP TABLE IF EXISTS {attendees_table_name}")
+                
+                # Delete the QR code image for the queue
+                qr_code_path = f"static/qr_codes/{selected_queue_id}_qr_code.png"
+                if os.path.exists(qr_code_path):
+                    os.remove(qr_code_path)
 
                 # Commit to DB
                 mysql.connection.commit()
@@ -187,6 +192,21 @@ def dashboard():
                 flash('Queue Deleted Successfully!', 'success')
                 
                 return redirect(url_for('dashboard'))
+            
+            # Served Attendee
+            if request.method == 'POST' and 'served_attendee_id' in request.form:
+                served_attendee_id = request.form['served_attendee_id']
+
+                # Delete the served attendee from the attendees table
+                cur.execute(f"DELETE FROM {attendees_table_name} WHERE id = %s", (served_attendee_id,))
+
+                # Commit to DB
+                mysql.connection.commit()
+
+                flash('Attendee Served Successfully!', 'success')
+
+                # Redirect back to the same queue
+                return redirect(url_for('dashboard', queue_id=selected_queue_id, queue_name=selected_queue_name))
 
             # Close connection
             cur.close()
@@ -213,6 +233,9 @@ def add_queue():
         # Commit to DB
         mysql.connection.commit()
         
+        # Get the generated queue_id
+        queue_id = cur.lastrowid
+        
         # Create a new table for attendees dynamically
         attendees_table_name = f"{queue_name.replace(' ', '_')}_attendees"
         create_table_query = f"""
@@ -232,7 +255,7 @@ def add_queue():
         mysql.connection.commit()
         
         # Generate link for attendees to join the queue
-        join_link = url_for('join_queue', queue_name=queue_name, _external=True)
+        join_link = url_for('join_queue', queue_id=queue_id, _external=True)
 
         # Generate QR code
         qr = qrcode.QRCode()
@@ -241,7 +264,7 @@ def add_queue():
         qr_img = qr.make_image()
 
         # Save QR code image
-        qr_img_path = f"static/qr_codes/{queue_name.replace(' ', '_')}_qr_code.png"
+        qr_img_path = f"static/qr_codes/{queue_id}_qr_code.png"
         qr_img.save(qr_img_path)
     
         # Close connection
@@ -255,9 +278,38 @@ def add_queue():
     return render_template('add_queue.html')
 
 
+@app.route('/join_details/<int:queue_id>', methods=['GET'])
+@is_logged_in
+def join_details(queue_id):
+    # Create cursor
+    cur = mysql.connection.cursor()
+
+    # Get the queue details from the database
+    cur.execute("SELECT * FROM queues WHERE id = %s", (queue_id,))
+    queue_data = cur.fetchone()
+
+    if queue_data:
+        # Retrieve the queue details
+        queue_name = queue_data['queue_name']
+        purpose = queue_data['purpose']
+        instructions = queue_data['instructions']
+
+        # Retrieve the join URL and QR code image path based on the queue_id
+        join_url = url_for('join_queue', queue_id=queue_id, _external=True)
+        qr_code_path = f"qr_codes/{queue_id}_qr_code.png"
+
+        # Close connection
+        cur.close()
+
+        return render_template('join_details.html', queue_id=queue_id, queue_name=queue_name, purpose=purpose, instructions=instructions, join_url=join_url, qr_code_path=qr_code_path)
+
+    flash('Queue not found!', 'danger')
+    return redirect(url_for('dashboard'))
+
+# PUBLIC ROUTES ##########################################################################
 # join Queue
-@app.route('/join_queue/<queue_name>', methods=['GET', 'POST'])
-def join_queue(queue_name):
+@app.route('/join_queue/<int:queue_id>', methods=['GET', 'POST'])
+def join_queue(queue_id):
     if request.method == 'POST':
         # Get attendee data from form fields
         first_name = request.form['first_name']
@@ -265,54 +317,86 @@ def join_queue(queue_name):
         account_number = request.form['account_number']
         service_requested = request.form['service_requested']
         
-        # Create cursor
-        cur = mysql.connection.cursor()
+        try: 
+            # Create cursor
+            cur = mysql.connection.cursor()
+            
+            # Get the queue details from the database
+            cur.execute("SELECT * FROM queues WHERE id = %s", (queue_id,))
+            queue_data = cur.fetchone()
+            
+            if queue_data:
+                # Retrieve the queue details
+                queue_name = queue_data['queue_name']
         
-        # Get queue_id based on queue_name
-        cur.execute("SELECT id FROM queues WHERE queue_name = %s", (queue_name,))
-        queue_id = cur.fetchone()['id']
+                attendees_table_name = f"{queue_name.replace(' ', '_')}_attendees"
+                
+                 # Execute query to add attendee to attendees table
+                insert_query = f"INSERT INTO {attendees_table_name} (first_name, last_name, account_number, service_requested, queue_id) VALUES (%s, %s, %s, %s, %s)"
+                cur.execute(insert_query, (first_name, last_name, account_number, service_requested, queue_id))
+            
+                # Retrieve the attendee_id assigned to the attendee
+                attendee_id = cur.lastrowid
+                
+                # Commit to DB
+                mysql.connection.commit()
         
-        # Execute query to add attendee to attendees table
-        cur.execute("INSERT INTO attendees (first_name, last_name, account_number, service_requested, queue_id) VALUES (%s, %s, %s, %s, %s)",
-                    (first_name, last_name, account_number, service_requested, queue_id))
-        
-        # Commit to DB
-        mysql.connection.commit()
-    
-        # Close connection
-        cur.close()
-        
-        flash('You have successfully joined the queue!', 'success')
-        
-        # Redirect to a separate page where attendees can see their position in the queue
-        return redirect(url_for('queue_status', queue_id=queue_id))
- 
-    # Handle GET request (initial form display)
-    return render_template('join_queue.html', queue_name=queue_name, business_name=session['business_name'])
+                # Close connection
+                cur.close()
+                
+                # Store attendee_id in session
+                session['attendee_id'] = attendee_id
+                # Store first_name in session
+                session['first_name'] = first_name
+            
+                flash('You have successfully joined the queue!', 'success')
+            
+                # Redirect to a separate page where attendees can see their position in the queue
+                return redirect(url_for('queue_status', queue_id=queue_id))
+            
+        except Exception as e:
+            flash(f'An error occurred while joining the queue. Please contact us on 080-{session["business_name"]} for assistance.', 'danger')
+            print(f"Database insert error: {e}")
+
+    #Handle GET request (initial form display)
+    return render_template('join_queue.html', business_name=session['business_name'])
 
 
 # Queue Status
 @app.route('/queue_status/<int:queue_id>')
 def queue_status(queue_id):
-    # Create cursor
-    cur = mysql.connection.cursor()
+    try:
+        # Create cursor
+        cur = mysql.connection.cursor()
+        
+        # Get the queue details from the database
+        cur.execute("SELECT * FROM queues WHERE id = %s", (queue_id,))
+        queue_data = cur.fetchone()
+            
+        if queue_data:
+            # Retrieve the queue details
+            queue_name = queue_data['queue_name']
+        
+            # Generate the attendees table name
+            attendees_table_name = f"{queue_name.replace(' ', '_')}_attendees"
+        
+            # Get the position of the current attendee in the queue using attendee_id from session
+            cur.execute(f"SELECT COUNT(*) FROM {attendees_table_name} WHERE queue_id = %s AND id <= %s",
+                        (queue_id, session.get('attendee_id')))
+            position = cur.fetchone()[0]
+        
+            # Get the first_name from session
+            first_name = session.get('first_name')
+        
+            # Close connection
+            cur.close()
+            
+            return render_template('queue_status.html', queue_name=queue_name, position=position, first_name=first_name, error=None)
     
-    # Get queue name based on queue_id
-    cur.execute("SELECT queue_name FROM queues WHERE id = %s", (queue_id,))
-    queue_name = cur.fetchone()['queue_name']
-    
-    # Get the position of the current attendee in the queue
-    cur.execute("SELECT COUNT(*) FROM attendees WHERE queue_id = %s AND id <= (SELECT id FROM attendees WHERE queue_id = %s AND first_name = %s AND last_name = %s)",
-                (queue_id, queue_id, session['first_name'], session['last_name']))
-    position = cur.fetchone()[0]
-    
-    # Close connection
-    cur.close()
-    
-    return render_template('queue_status.html', queue_name=queue_name, position=position)
+    except Exception as e:
+        error_message = f'An error occurred while fetching your queue status. Please contact us on 080-{session["business_name"]} for assistance.'
+        print(f"Database error: {e}")
+        
+        return render_template('queue_status.html', queue_name=None, position=None, first_name=None, error=error_message)
 
 
-# Logout
-@app.route('/join_details')
-def join_details():
-    return render_template('join_details.html')  
