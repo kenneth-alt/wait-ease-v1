@@ -343,16 +343,11 @@ def join_queue(queue_id):
         
                 # Close connection
                 cur.close()
-                
-                # Store attendee_id in session
-                session['attendee_id'] = attendee_id
-                # Store first_name in session
-                session['first_name'] = first_name
             
                 flash('You have successfully joined the queue!', 'success')
             
-                # Redirect to a separate page where attendees can see their position in the queue
-                return redirect(url_for('queue_status', queue_id=queue_id))
+                # Redirect to the queue_status page with the queue_id and attendee_id as query parameters
+                return redirect(url_for('queue_status', queue_id=queue_id, attendee_id=attendee_id))
             
         except Exception as e:
             flash(f'An error occurred while joining the queue. Please contact us on 080-{session["business_name"]} for assistance.', 'danger')
@@ -363,8 +358,9 @@ def join_queue(queue_id):
 
 
 # Queue Status
-@app.route('/queue_status/<int:queue_id>')
-def queue_status(queue_id):
+@app.route('/queue_status/<int:queue_id>/<int:attendee_id>')
+def queue_status(queue_id, attendee_id):
+    position = None  # Default value for position
     try:
         # Create cursor
         cur = mysql.connection.cursor()
@@ -372,31 +368,24 @@ def queue_status(queue_id):
         # Get the queue details from the database
         cur.execute("SELECT * FROM queues WHERE id = %s", (queue_id,))
         queue_data = cur.fetchone()
-            
+        
         if queue_data:
             # Retrieve the queue details
             queue_name = queue_data['queue_name']
-        
-            # Generate the attendees table name
+            
             attendees_table_name = f"{queue_name.replace(' ', '_')}_attendees"
         
-            # Get the position of the current attendee in the queue using attendee_id from session
-            cur.execute(f"SELECT COUNT(*) FROM {attendees_table_name} WHERE queue_id = %s AND id <= %s",
-                        (queue_id, session.get('attendee_id')))
-            position = cur.fetchone()[0]
-        
-            # Get the first_name from session
-            first_name = session.get('first_name')
-        
+            cur.execute(f"SELECT COUNT(*) AS position FROM {attendees_table_name} WHERE id <= %s", (attendee_id,))
+            position_data = cur.fetchone()
+            position = position_data['position'] if position_data else None
+            
             # Close connection
             cur.close()
-            
-            return render_template('queue_status.html', queue_name=queue_name, position=position, first_name=first_name, error=None)
+        
+            return render_template('queue_status.html', queue_name=queue_name, position=position, error=None)
     
     except Exception as e:
         error_message = f'An error occurred while fetching your queue status. Please contact us on 080-{session["business_name"]} for assistance.'
         print(f"Database error: {e}")
         
         return render_template('queue_status.html', queue_name=None, position=None, first_name=None, error=error_message)
-
-
