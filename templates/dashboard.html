@@ -1,8 +1,112 @@
 {% extends 'layout.html' %}
 
 {% block body %}
-  <div class="text-left">
-    <a href="/logout" class="btn btn-outline-danger my-3">Logout</a>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-lg-3 bg-default sidebar">
+        <div class="d-flex align-items-center justify-content-center p-3">
+          <!-- Name of the logged-in client -->
+          <div class="d-flex flex-column align-items-center">
+            <div>
+              <i class="fas fa-user fa-3x text-success"></i>
+            </div>
+            <h5 class="my-3">Hi, {{ session.business_name }}</h5>
+          </div>
+        </div>
+        <ul class="nav flex-column mt-3">
+          <!-- Sidebar links -->
+          <li class="nav-item">
+            <a class="nav-link" href="/add_queue"><i class="fas fa-plus-circle"></i> Add Queue</a>
+          </li>
+          <hr />
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-list"></i> My Queues</a>
+          </li>
+
+          {% for queue in queues %}
+            <li class="nav-item queuelist">
+              <a class="nav-link" href="/dashboard?queue_id={{ queue.id }}">{{ queue.queue_name }}</a>
+            </li>
+          {% endfor %}
+
+          <hr />
+          <li class="nav-item">
+            <a class="nav-link" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="col-lg-9 dashboard">
+        <!-- Main content of the dashboard -->
+        <h3 class="text-center my-2">Welcome to your Dashboard!</h3>
+
+        <h5>Queue Summary</h5>
+        <hr />
+
+        {% if selected_queue_name %}
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+            <h6 class="mr-3">{{ selected_queue_name }}</h6>
+            </div>
+            <div>
+              <h6 class="mr-3">Total Attendees</h6>
+              <p class="text-center">{{ attendees|length }}</p>
+              </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <a href="{{ url_for('join_details', queue_id=selected_queue_id) }}" class="btn btn-primary">Join Details</a>
+              <span style="margin: 0 10px;"></span> <!-- Adding a space between buttons -->
+              <form action="" method="POST">
+              <input type="hidden" name="delete_queue_id" value="{{ selected_queue_id }}">
+              <button type="submit" class="btn btn-danger">Delete Queue</button>
+              </form>
+            </div>
+          </div>
+                  
+        {% else %}
+          <p>No queue selected.</p>
+        {% endif %}
+
+        <hr />
+        <h5>Queue Management</h5>
+        
+        <div class="table-responsive">
+          <table class="table">
+              <thead>
+                  <tr>
+                      <th>First Name</th>
+                      <th>Last Name</th>
+                      <th>Account Number</th>
+                      <th>Service Requested</th>
+                      <th>Served</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <!-- Iterate over attendees and display them in the table -->
+                  {% for attendee in attendees %}
+                      <tr>
+                          <td>{{ attendee.first_name }}</td>
+                          <td>{{ attendee.last_name }}</td>
+                          <td>{{ attendee.account_number }}</td>
+                          <td>{{ attendee.service_requested }}</td>
+                          <td>
+                              <form action="" method="POST">
+                                  <input type="hidden" name="served_attendee_id" value="{{ attendee.id }}">
+                                  <button type="submit" class="btn btn-success">Served</button>
+                              </form>
+                          </td>
+                      </tr>
+                  {% endfor %}
+              </tbody>
+          </table>
+      
+          {% if not attendees %}
+              <p>No attendees found.</p>
+          {% endif %}
+      </div>
+
+      </div>
+    </div>
   </div>
-  <h3 class="text-center">Hi, {{  session.business_name }} Welcome to your Dashboard!</h3>
+
 {% endblock %}
