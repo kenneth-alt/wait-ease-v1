@@ -2,43 +2,68 @@
 
 {% block body %}
 
-    <div class="container my-3 text-center">
-        <h3>Streamline Your Queues, Elevate Customer Experience!</h3>
-
-        <img src="static/images/queue-1.jpg" alt="queue_image" style="max-width: 100%; height: 50vh;">
-
-        <h5 class="my-3">Transform customer service with robust queue management</h5>
-
-        {% if session.logged_in %}
-        <a href="/dashboard" class="btn btn-outline-success" role="button">Dashboard</a>
-        <span style="margin: 0 10px;"></span> <!-- Adding a space between buttons -->
-        <a href="/logout" class="btn btn-outline-danger" role="button">Logout</a>
-        {% else %}
-        <a href="/register" class="btn btn-outline-success" role="button">Register</a>
-        <span style="margin: 0 10px;"></span> <!-- Adding a space between buttons -->
-        <a href="/login" class="btn btn-outline-success" role="button">Login</a>
-        {% endif %}
+  <div class="homepage">
+    <div class="homepage-content text-center">
+      <h3>Streamline Your Queues, Elevate Customer Experience!</h3>
+      <h5 class="my-3">Transform customer service with robust queue management</h5>
     </div>
 
-    <div class="container my-4 text-center">
-        <h4 class="mb-3">Our Customers</h4>
-
-        <div class="row logos-container">
-            <div class="card">
-                <img src="static/images/lorem-bank-logo.jpg" alt="Company 1" class="logo-img">
-            </div>
-            <div class="card">
-                <img src="static/images/coal-city-university.jpg" alt="Company 2" class="logo-img">
-            </div>
-            <div class="card card-fixed-size">
-                <img src="static/images/042-bank-logo.jpg" alt="Company 3" class="logo-img">
-            </div>
-            <div class="card card-fixed-size">
-                <img src="static/images/lorem-logo.jpg" alt="Company 4" class="logo-img">
-            </div>
-            <!-- Add more company cards here -->
-        </div>
-
+    <div class="homepage-buttons text-center">
+      {% if session.logged_in %}
+      <a href="/dashboard" class="btn btn-success" role="button">Dashboard</a>
+      <span style="margin: 0 20px;"></span> <!-- Adding a space between buttons -->
+      <a href="/logout" class="btn btn-danger" role="button">Logout</a>
+      {% else %}
+      <a href="/register" class="btn btn-success" role="button">Register</a>
+      <span style="margin: 0 20px;"></span> <!-- Adding a space between buttons -->
+      <a href="/login" class="btn btn-success" role="button">Login</a>
+      {% endif %}
     </div>
+  </div>
+
+  <div class="offering">
+    <div class="offering-text">
+      <h3>Our Offering</h3>
+      <hr />
+      <p>Welcome to WaitEase, your trusted queue management solution. We understand the challenges businesses face in managing queues efficiently, and we're here to help.</p>
+
+      <p>With WaitEase, you can streamline your queue management process and provide a seamless experience for your customers. Our powerful features empower you to take control of your queues, enhance customer satisfaction, and optimize your operations.</p>
+
+      <p>At WaitEase, we're dedicated to revolutionizing your queue management process. Say goodbye to long waiting times, frustrated customers, and manual paperwork. Embrace the power of streamlined queues and unlock a world of efficiency.</p>
+
+      <a href="/how_it_works" class="btn btn-outline-success" role="button">Get Started</a>
+    </div>
+  </div>
+
+  <div class="benefits">
+    <h3>Benefits to Our Customers</h3>
+    <hr />
+
+    <p>WaitEase, customers enjoy a hassle-free queue experience. Say goodbye to long wait times and confusion. Experience convenience, transparency, and efficient service, ensuring a smooth and enjoyable customer experience every time.</p> 
+  </div>
+
+  <div class="container my-3 text-center">
+    <h4 class="mb-3">We are trusted by</h4>
+
+    <div class="row logos-container">
+      <div class="card">
+        <img src="static/images/lorem-bank-logo.jpg" alt="Company 1" class="logo-img">
+      </div>
+      <div class="card">
+        <img src="static/images/coal-city-university.jpg" alt="Company 2" class="logo-img">
+      </div>
+      <div class="card">
+        <img src="../static/images/042-bank-logo.JPG" alt="Company 3" class="logo-img">
+      </div>
+      <div class="card">
+        <img src="static/images/lorem-logo.jpg" alt="Company 4" class="logo-img">
+      </div>
+      <div class="card">
+      <img src="static/images/next-bank-logo.jpg" alt="bank 5" class="logo-img">
+      </div>
+      <!-- Add more company cards here -->
+    </div>
+    
+  </div>
 
 {% endblock %}
