@@ -34,7 +34,7 @@ def homepage():
     return render_template('homepage.html')
 
 # How it works
-@app.route('/how-it-works')
+@app.route('/how_it_works')
 def how_it_works():
     return render_template('how_it_works.html')
 
@@ -350,11 +350,11 @@ def join_queue(queue_id):
                 return redirect(url_for('queue_status', queue_id=queue_id, attendee_id=attendee_id))
             
         except Exception as e:
-            flash(f'An error occurred while joining the queue. Please contact us on 080-{session["business_name"]} for assistance.', 'danger')
+            flash(f'An error occurred while joining the queue. Please contact us on 080-OurBank for assistance.', 'danger')
             print(f"Database insert error: {e}")
 
     #Handle GET request (initial form display)
-    return render_template('join_queue.html', business_name=session['business_name'])
+    return render_template('join_queue.html')
 
 
 # Queue Status
@@ -385,7 +385,7 @@ def queue_status(queue_id, attendee_id):
             return render_template('queue_status.html', queue_name=queue_name, position=position, error=None)
     
     except Exception as e:
-        error_message = f'An error occurred while fetching your queue status. Please contact us on 080-{session["business_name"]} for assistance.'
+        error_message = f'An error occurred while fetching your queue status. Please contact us on 080-080-OurBank for assistance.'
         print(f"Database error: {e}")
         
         return render_template('queue_status.html', queue_name=None, position=None, first_name=None, error=error_message)

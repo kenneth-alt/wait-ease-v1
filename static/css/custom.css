@@ -1,7 +1,43 @@
 
 body {
-    background-color: rgb(253, 239, 253);
+    background-color: rgb(253, 249, 245);
     margin: 0;
+}
+
+
+.homepage {
+  width: 100%;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.7) 50%, rgba(255, 255, 255, 0) 75%), url('../images/queue-6.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 60vh;
+}
+
+.homepage-content {
+  padding: 1%;
+  padding-top: 2%;
+  width: 70%;
+}
+
+.homepage-buttons {
+  width: 50%;
+  margin-top: 15%;
+}
+
+.offering {
+  padding: 2%;
+}
+
+.offering-text {
+  width: 70%;
+  text-align: justify;
+}
+
+.benefits {
+  padding: 2%;
+  width: 70%;
+  text-align: justify;
 }
 
 .logos-container {
@@ -11,11 +47,11 @@ body {
     gap: 20px; /* Adjust the desired gap between logos */
 }
 
-.logo-img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
+  .logo-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: fill;
+  }
 
 .card {
     width: 200px; /* Adjust the desired card width */
@@ -38,6 +74,7 @@ body {
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: 20px;
+    padding: 2%;
   }
 
   .how-grid-item {
