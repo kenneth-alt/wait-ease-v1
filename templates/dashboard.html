@@ -56,10 +56,11 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
               <a href="{{ url_for('join_details', queue_id=selected_queue_id) }}" class="btn btn-primary">Join Details</a>
               <span style="margin: 0 10px;"></span> <!-- Adding a space between buttons -->
-              <form action="" method="POST">
+              <!-- <form action="" method="POST">
               <input type="hidden" name="delete_queue_id" value="{{ selected_queue_id }}">
-              <button type="submit" class="btn btn-danger">Delete Queue</button>
-              </form>
+              <button type="submit" class="btn btn-danger">Delete Queue</button> 
+              </form> -->
+              <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteQueueModal">Delete Queue</button>
             </div>
           </div>
                   
@@ -108,5 +109,28 @@
       </div>
     </div>
   </div>
+
+
+<!-- Delete Queue Modal -->
+<div class="modal fade" id="deleteQueueModal" tabindex="-1" aria-labelledby="deleteQueueModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteQueueModalLabel">Delete Queue</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete this Queue?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+        <form action="" method="POST">
+          <input type="hidden" name="delete_queue_id" value="{{ selected_queue_id }}">
+          <button type="submit" class="btn btn-danger">Yes, delete!</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
