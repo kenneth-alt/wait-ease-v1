@@ -1,11 +1,9 @@
 import os
 from dotenv import load_dotenv
-from flask import Flask, render_template, url_for, redirect, flash, session, logging, request
-from flask_mysqldb import MySQL
+from flask import Flask, render_template, url_for, redirect, flash, session, logging, request, g
+import sqlite3
 from flask_bootstrap import Bootstrap
-from flask_wtf import FlaskForm
 from wtforms import Form, StringField, FileField, PasswordField, validators, EmailField
-from flask_wtf.file import FileAllowed, FileSize, FileRequired
 from wtforms.validators import DataRequired, EqualTo, Email, Length
 from passlib.hash import sha256_crypt
 from functools import wraps
@@ -18,15 +16,70 @@ Bootstrap(app)
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-# Config MySQL
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
-app.config['MYSQL_DB'] = os.getenv('MYSQL_DB')
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+# Config SQLite
+app.config['DATABASE'] = 'db/queue_app.db'
 
-# Init MySQL
-mysql = MySQL(app)
+
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db_path = os.path.join(os.getcwd(), app.config['DATABASE'])
+        if not os.path.isfile(db_path):
+            # Create the database file
+            conn = sqlite3.connect(db_path)
+            conn.close()
+        db = g._database = sqlite3.connect(db_path)
+    return db
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
+
+# Init SQLite
+def init_db():
+    with app.app_context():
+        db = get_db()
+        cursor = db.cursor()
+
+        # Check if the clients and queues tables exist
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='clients'")
+        clients_table_exists = cursor.fetchone() is not None
+
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='queues'")
+        queues_table_exists = cursor.fetchone() is not None
+
+        # Create the clients table if it doesn't exist
+        if not clients_table_exists:
+            cursor.execute("""
+                CREATE TABLE clients (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    business_name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    phone_number TEXT NOT NULL,
+                    password TEXT NOT NULL
+                )
+            """)
+
+        # Create the queues table if it doesn't exist
+        if not queues_table_exists:
+            cursor.execute("""
+                CREATE TABLE queues (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    queue_name TEXT NOT NULL,
+                    purpose TEXT NOT NULL,
+                    instructions TEXT NOT NULL,
+                    created_by_client_id INTEGER NOT NULL,
+                    FOREIGN KEY (created_by_client_id) REFERENCES clients (id)
+                )
+            """)
+
+        db.commit()
+
+
+init_db()
 
 # Homepage
 @app.route('/')
@@ -57,13 +110,13 @@ def register():
         password = sha256_crypt.encrypt(str(form.password.data))
         
         # Create cursor
-        cur = mysql.connection.cursor()
+        cur = get_db().cursor()
         
         # Execute querry
         cur.execute("INSERT INTO clients(business_name, email, phone_number, password) VALUES(%s, %s, %s, %s)", (business_name, email, phone_number, password))
         
         # Commit to DB
-        mysql.connection.commit()
+        get_db().commit()
     
         # Close connection
         cur.close()
@@ -85,7 +138,7 @@ def login():
         user_password = request.form['user_password']
         
         # create cursor
-        cur = mysql.connection.cursor()
+        cur = get_db().cursor()
         
         # Get clients by email
         result = cur.execute("SELECT * FROM clients WHERE email = %s", [user_email])
@@ -143,7 +196,7 @@ def logout():
 @is_logged_in
 def dashboard():
     # Create cursor
-    cur = mysql.connection.cursor()
+    cur = get_db().cursor()
     
     # Get the queues for the logged-in client
     cur.execute("SELECT * FROM queues WHERE created_by_client_id = %s", (session['id'],))
@@ -187,7 +240,7 @@ def dashboard():
                     os.remove(qr_code_path)
 
                 # Commit to DB
-                mysql.connection.commit()
+                get_db().commit()
                 
                 flash('Queue Deleted Successfully!', 'success')
                 
@@ -201,7 +254,7 @@ def dashboard():
                 cur.execute(f"DELETE FROM {attendees_table_name} WHERE id = %s", (served_attendee_id,))
 
                 # Commit to DB
-                mysql.connection.commit()
+                get_db().commit()
 
                 flash('Attendee Served Successfully!', 'success')
 
@@ -225,13 +278,13 @@ def add_queue():
         instructions = request.form['instructions']
         
         # Create cursor
-        cur = mysql.connection.cursor()
+        cur = get_db().cursor()
         
         # Execute querry
         cur.execute("INSERT INTO queues(queue_name, purpose, instructions, created_by_client_id) VALUES(%s, %s, %s, %s)", (queue_name, purpose, instructions, session['id']))
         
         # Commit to DB
-        mysql.connection.commit()
+        get_db().commit()
         
         # Get the generated queue_id
         queue_id = cur.lastrowid
@@ -252,7 +305,7 @@ def add_queue():
         cur.execute(create_table_query)
 
         # Commit to DB
-        mysql.connection.commit()
+        get_db().commit()
         
         # Generate link for attendees to join the queue
         join_link = url_for('join_queue', queue_id=queue_id, _external=True)
@@ -282,7 +335,7 @@ def add_queue():
 @is_logged_in
 def join_details(queue_id):
     # Create cursor
-    cur = mysql.connection.cursor()
+    cur = get_db().cursor()
 
     # Get the queue details from the database
     cur.execute("SELECT * FROM queues WHERE id = %s", (queue_id,))
@@ -319,7 +372,7 @@ def join_queue(queue_id):
         
         try: 
             # Create cursor
-            cur = mysql.connection.cursor()
+            cur = get_db().cursor()
             
             # Get the queue details from the database
             cur.execute("SELECT * FROM queues WHERE id = %s", (queue_id,))
@@ -339,7 +392,8 @@ def join_queue(queue_id):
                 attendee_id = cur.lastrowid
                 
                 # Commit to DB
-                mysql.connection.commit()
+                get_db().commit()
+
         
                 # Close connection
                 cur.close()
@@ -363,7 +417,7 @@ def queue_status(queue_id, attendee_id):
     position = None  # Default value for position
     try:
         # Create cursor
-        cur = mysql.connection.cursor()
+        cur = get_db().cursor()
         
         # Get the queue details from the database
         cur.execute("SELECT * FROM queues WHERE id = %s", (queue_id,))
