@@ -19,7 +19,6 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 # Config SQLite
 app.config['DATABASE'] = 'db/queue_app.db'
 
-
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -29,6 +28,7 @@ def get_db():
             conn = sqlite3.connect(db_path)
             conn.close()
         db = g._database = sqlite3.connect(db_path)
+        db.row_factory = sqlite3.Row
     return db
 
 @app.teardown_appcontext
@@ -113,7 +113,7 @@ def register():
         cur = get_db().cursor()
         
         # Execute querry
-        cur.execute("INSERT INTO clients(business_name, email, phone_number, password) VALUES(%s, %s, %s, %s)", (business_name, email, phone_number, password))
+        cur.execute("INSERT INTO clients(business_name, email, phone_number, password) VALUES(?, ?, ?, ?)", (business_name, email, phone_number, password))
         
         # Commit to DB
         get_db().commit()
@@ -141,10 +141,12 @@ def login():
         cur = get_db().cursor()
         
         # Get clients by email
-        result = cur.execute("SELECT * FROM clients WHERE email = %s", [user_email])
-        if result > 0:
+        cur.execute("SELECT * FROM clients WHERE email = ?", [user_email])
+        data = cur.fetchone()
+        
+        # Check if a client with the given email exists
+        if data is not None:
             # Get stored hash
-            data = cur.fetchone()
             id = data['id']
             business_name = data['business_name']
             password = data['password']
@@ -199,19 +201,18 @@ def dashboard():
     cur = get_db().cursor()
     
     # Get the queues for the logged-in client
-    cur.execute("SELECT * FROM queues WHERE created_by_client_id = %s", (session['id'],))
+    cur.execute("SELECT * FROM queues WHERE created_by_client_id = ?", (session['id'],))
     queues = cur.fetchall()
     
     # Get the selected queue ID from the URL parameter
     selected_queue_id = request.args.get('queue_id')
-    selected_queue_name = request.args.get('queue_name')
 
     # Get the attendees table name for the selected queue
     selected_queue_name = None
     attendees_table_name = None
     attendees = []  # Initialize the attendees list
     if selected_queue_id:
-        cur.execute("SELECT queue_name FROM queues WHERE id = %s", (selected_queue_id,))
+        cur.execute("SELECT queue_name FROM queues WHERE id = ?", (selected_queue_id,))
         queue_data = cur.fetchone()
         if queue_data:
             selected_queue_name = queue_data['queue_name']
@@ -228,7 +229,7 @@ def dashboard():
                 queue_id_to_delete = request.form['delete_queue_id']
                 
                 # Delete the queue
-                cur.execute("DELETE FROM queues WHERE id = %s", (queue_id_to_delete,))
+                cur.execute("DELETE FROM queues WHERE id = ?", (queue_id_to_delete,))
 
                 # Delete the corresponding attendees table
                 attendees_table_name = f"{selected_queue_name.replace(' ', '_')}_attendees"
@@ -251,7 +252,7 @@ def dashboard():
                 served_attendee_id = request.form['served_attendee_id']
 
                 # Delete the served attendee from the attendees table
-                cur.execute(f"DELETE FROM {attendees_table_name} WHERE id = %s", (served_attendee_id,))
+                cur.execute(f"DELETE FROM {attendees_table_name} WHERE id = ?", (served_attendee_id,))
 
                 # Commit to DB
                 get_db().commit()
@@ -281,7 +282,7 @@ def add_queue():
         cur = get_db().cursor()
         
         # Execute querry
-        cur.execute("INSERT INTO queues(queue_name, purpose, instructions, created_by_client_id) VALUES(%s, %s, %s, %s)", (queue_name, purpose, instructions, session['id']))
+        cur.execute("INSERT INTO queues(queue_name, purpose, instructions, created_by_client_id) VALUES(?, ?, ?, ?)", (queue_name, purpose, instructions, session['id']))
         
         # Commit to DB
         get_db().commit()
@@ -338,7 +339,7 @@ def join_details(queue_id):
     cur = get_db().cursor()
 
     # Get the queue details from the database
-    cur.execute("SELECT * FROM queues WHERE id = %s", (queue_id,))
+    cur.execute("SELECT * FROM queues WHERE id = ?", (queue_id,))
     queue_data = cur.fetchone()
 
     if queue_data:
@@ -375,7 +376,7 @@ def join_queue(queue_id):
             cur = get_db().cursor()
             
             # Get the queue details from the database
-            cur.execute("SELECT * FROM queues WHERE id = %s", (queue_id,))
+            cur.execute("SELECT * FROM queues WHERE id = ?", (queue_id,))
             queue_data = cur.fetchone()
             
             if queue_data:
@@ -385,7 +386,7 @@ def join_queue(queue_id):
                 attendees_table_name = f"{queue_name.replace(' ', '_')}_attendees"
                 
                  # Execute query to add attendee to attendees table
-                insert_query = f"INSERT INTO {attendees_table_name} (first_name, last_name, account_number, service_requested, queue_id) VALUES (%s, %s, %s, %s, %s)"
+                insert_query = f"INSERT INTO {attendees_table_name} (first_name, last_name, account_number, service_requested, queue_id) VALUES (?, ?, ?, ?, ?)"
                 cur.execute(insert_query, (first_name, last_name, account_number, service_requested, queue_id))
             
                 # Retrieve the attendee_id assigned to the attendee
@@ -420,7 +421,7 @@ def queue_status(queue_id, attendee_id):
         cur = get_db().cursor()
         
         # Get the queue details from the database
-        cur.execute("SELECT * FROM queues WHERE id = %s", (queue_id,))
+        cur.execute("SELECT * FROM queues WHERE id = ?", (queue_id,))
         queue_data = cur.fetchone()
         
         if queue_data:
@@ -429,7 +430,7 @@ def queue_status(queue_id, attendee_id):
             
             attendees_table_name = f"{queue_name.replace(' ', '_')}_attendees"
         
-            cur.execute(f"SELECT COUNT(*) AS position FROM {attendees_table_name} WHERE id <= %s", (attendee_id,))
+            cur.execute(f"SELECT COUNT(*) AS position FROM {attendees_table_name} WHERE id <= ?", (attendee_id,))
             position_data = cur.fetchone()
             position = position_data['position'] if position_data else None
             
