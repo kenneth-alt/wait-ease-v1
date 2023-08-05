@@ -1,7 +1,7 @@
 # wait-ease-v1
 
 ## To run app locally
-## Make sure Python and pip package manager are correctly installed
+## Make sure Python 3.9 and above and pip package manager are correctly installed
 
 1. Clone the repo
 
