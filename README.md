@@ -6,7 +6,7 @@
 1. Clone the repo
 
 2. Create and activate python virtual environment
-    python -m venv myenv
+    python -m venv venv
     source ./venv/Scripts/activate
 
 3. Install dependencies
