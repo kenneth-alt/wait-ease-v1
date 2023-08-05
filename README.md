@@ -7,7 +7,7 @@
 
 2. Create and activate python virtual environment
     python -m venv myenv
-    source ./myenv/Scripts/activate
+    source ./venv/Scripts/activate
 
 3. Install dependencies
     pip install -r requirements.txt
