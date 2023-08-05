@@ -16,3 +16,6 @@
 
 5. Run the flask app
     flask run
+
+
+   ## To deploy on Railway
