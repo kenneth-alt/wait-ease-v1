@@ -1,5 +1,5 @@
 # wait-ease-v1
-Project to create a Queue Management system in Python Flask and PostgreSQL.
+Project to create a Queue Management system application in Python Flask and using MySQL database.
 
 ## To run app locally
 ## Make sure Python 3.9 and above and pip package manager are correctly installed
