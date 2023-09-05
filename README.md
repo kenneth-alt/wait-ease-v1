@@ -18,5 +18,3 @@ Project to create a Queue Management system in Python Flask and PostgreSQL.
 5. Run the flask app
     flask run
 
-
-   ## To deploy on Railway
